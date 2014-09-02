@@ -255,7 +255,6 @@ static const String:ff2versiontitles[][]=
 	"1.10.3",
 	"1.10.3",
 	"1.10.3",
-	"1.10.3"
 };
 
 static const String:ff2versiondates[][]=
@@ -3047,7 +3046,6 @@ public Action:MessageTimer(Handle:timer)
 		Format(textChat, sizeof(textChat), "{olive}[FF2]{default} %t!", "ff2_start", Boss[client], name, BossHealth[client]-BossHealthMax[client]*(BossLives[client]-1), lives);
 		ReplaceString(textChat, sizeof(textChat), "\n", "");  //Get rid of newlines
 		CPrintToChatAll("%s", textChat);
-
 	}
 
 	for(new client; client<=MaxClients; client++)
