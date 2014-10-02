@@ -6161,6 +6161,21 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 						return action;
 					}
 				}
+
+				if(attacker==client)
+				{
+					new weapon=GetPlayerWeaponSlot(attacker, TFWeaponSlot_Melee);
+					if(IsValidEntity(weapon) && GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex")==307)  //Ullapool Caber
+					{
+						if(detonations[attacker]<allowedDetonations)
+						{
+							detonations[attacker]++;
+							SetEntProp(weapon, Prop_Send, "m_bBroken", 0);
+							SetEntProp(weapon, Prop_Send, "m_iDetonated", 0);
+							PrintHintText(attacker, "%t", "Detonations Left", allowedDetonations-detonations[attacker]);
+						}
+					}
+				}
 			}
 
 			if(BossCharge[boss][0]>100.0)
