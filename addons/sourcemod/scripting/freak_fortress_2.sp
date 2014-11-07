@@ -8567,4 +8567,3 @@ SetClientGlow(client, Float:time1, Float:time2=-1.0)
 }
 
 #include <freak_fortress_2_vsh_feedback>
->>>>>>> origin/master

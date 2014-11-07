@@ -593,4 +593,3 @@ public __pl_FF2_SetNTVOptional()
 	MarkNativeAsOptional("FF2_GetBossPlayers");
 }
 #endif
->>>>>>> origin/master

@@ -350,28 +350,4 @@
 		"#format"	"{1:i}"
 		"en"		"You have {1} detonations left!"
 	}
-	"Boss Suicide Denied"
-	{
-		"en"	"You are not allowed to suicide as the boss!"
-	}
-	"Boss Suicide Pre-round"
-	{
-		"en"	"You are not allowed to suicide before the round starts!"
-	}
-	"Backstab"
-	{
-		"en"	"You just backstabbed the boss!"
-	}
-	"Backstabbed"
-	{
-		"en"	"You just got backstabbed!"
-	}
-	"Market Gardener"
-	{
-		"en"	"You just market-gardened the boss!"
-	}
-	"Market Gardened"
-	{
-		"en"	"You just got market-gardened!"
-	}
 }
