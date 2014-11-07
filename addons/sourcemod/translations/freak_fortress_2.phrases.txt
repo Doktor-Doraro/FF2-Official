@@ -300,12 +300,12 @@
 	"Boss with Multiple Lives Left"
 	{
 		"#format"	"{1:s},{2:i}"
-		"en"		"{1} lost 1 life! There are {2} more!"
+		"en"		"{1} lost a life! There are {2} more!"
 	}
 	"Boss with 1 Life Left"
 	{
-		"#format"	"{1:s},{2:i}"
-		"en"		"{1} lost 1 life! There is 1 more!"
+		"#format"	"{1:s}"
+		"en"		"{1} lost a life! There is 1 more!"
 	}
 	"Seeldier Rage Message"
 	{
@@ -348,5 +348,10 @@
 	"Market Gardened"
 	{
 		"en"	"You just got market-gardened!"
+	}
+	"Detonations Left"
+	{
+		"#format"	"{1:i}"
+		"en"		"You have {1} detonations left!"
 	}
 }

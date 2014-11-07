@@ -8,7 +8,7 @@
 #include <freak_fortress_2>
 #include <freak_fortress_2_subplugin>
 
-#define PLUGIN_VERSION "1.10.0"
+#define PLUGIN_VERSION "1.10.3"
 
 public Plugin:myinfo=
 {
@@ -64,7 +64,6 @@ public CvarChange(Handle:convar, const String:oldValue[], const String:newValue[
 {
 	oldJump=bool:StringToInt(newValue);
 }
-
 public Action:event_round_start(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	for(new client=0; client<MaxClients; client++)
@@ -192,7 +191,8 @@ public Action:FF2_OnAbility2(client, const String:plugin_name[], const String:ab
 
 Rage_Stun(const String:ability_name[], client)
 {
-	new Float:bossPosition[3], Float:clientPosition[3];
+	decl Float:bossPosition[3];
+	decl Float:clientPosition[3];
 	new Float:duration=FF2_GetAbilityArgumentFloat(client, this_plugin_name, ability_name, 1, 5.0);
 	new boss=GetClientOfUserId(FF2_GetBossUserId(client));
 	new Float:distance=FF2_GetRageDist(client, this_plugin_name, ability_name);
@@ -265,26 +265,20 @@ Charge_BraveJump(const String:ability_name[], client, slot, status)
 	{
 		case 1:
 		{
-			if(!(FF2_GetFF2flags(boss) & FF2FLAG_HUDDISABLED) && !(GetClientButtons(boss) & IN_SCORE))
-			{
-				SetHudTextParams(-1.0, 0.88, 0.15, 255, 255, 255, 255);
-				ShowSyncHudText(boss, jumpHUD, "%t", "Super Jump Cooldown", -RoundFloat(charge));
-			}
+			SetHudTextParams(-1.0, 0.88, 0.15, 255, 255, 255, 255);
+			FF2_ShowSyncHudText(boss, jumpHUD, "%t", "jump_status_2", -RoundFloat(charge));
 		}
 		case 2:
 		{
-			if(!(FF2_GetFF2flags(boss) & FF2FLAG_HUDDISABLED) && !(GetClientButtons(boss) & IN_SCORE))
+			SetHudTextParams(-1.0, 0.88, 0.15, 255, 255, 255, 255);
+			if(enableSuperDuperJump[client])
 			{
-				SetHudTextParams(-1.0, 0.88, 0.15, 255, 255, 255, 255);
-				if(enableSuperDuperJump[client])
-				{
-					SetHudTextParams(-1.0, 0.88, 0.15, 255, 64, 64, 255);
-					ShowSyncHudText(boss, jumpHUD, "%t", "Super Duper Jump Ready");
-				}
-				else
-				{
-					ShowSyncHudText(boss, jumpHUD, "%t", "Super Jump Charge", RoundFloat(charge));
-				}
+				SetHudTextParams(-1.0, 0.88, 0.15, 255, 64, 64, 255);
+				FF2_ShowSyncHudText(boss, jumpHUD, "%t", "super_duper_jump");
+			}
+			else
+			{
+				FF2_ShowSyncHudText(boss, jumpHUD, "%t", "jump_status", RoundFloat(charge));
 			}
 		}
 		case 3:
@@ -369,19 +363,13 @@ Charge_Teleport(const String:ability_name[], client, slot, status)
 	{
 		case 1:
 		{
-			if(!(FF2_GetFF2flags(boss) & FF2FLAG_HUDDISABLED) && !(GetClientButtons(boss) & IN_SCORE))
-			{
-				SetHudTextParams(-1.0, 0.88, 0.15, 255, 255, 255, 255);
-				ShowSyncHudText(boss, jumpHUD, "%t", "Teleportation Cooldown", -RoundFloat(charge));
-			}
+			SetHudTextParams(-1.0, 0.88, 0.15, 255, 255, 255, 255);
+			FF2_ShowSyncHudText(boss, jumpHUD, "%t", "teleport_status_2", -RoundFloat(charge));
 		}
 		case 2:
 		{
-			if(!(FF2_GetFF2flags(boss) & FF2FLAG_HUDDISABLED) && !(GetClientButtons(boss) & IN_SCORE))
-			{
-				SetHudTextParams(-1.0, 0.88, 0.15, 255, 255, 255, 255);
-				ShowSyncHudText(boss, jumpHUD, "%t", "Teleportation Charge", RoundFloat(charge));
-			}
+			SetHudTextParams(-1.0, 0.88, 0.15, 255, 255, 255, 255);
+			FF2_ShowSyncHudText(boss, jumpHUD, "%t", "teleport_status", RoundFloat(charge));
 		}
 		case 3:
 		{
