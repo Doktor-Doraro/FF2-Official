@@ -3290,7 +3290,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 
 //TODO: "By Definition Index", "onhit", "ontakedamage", "removeattrib"
-static Handle:weapon;
+	static Handle:weapon;
 	if(weapon!=INVALID_HANDLE)
 	{
 		CloseHandle(weapon);
@@ -5142,7 +5142,7 @@ public Action:OnCallForMedic(client, const String:command[], args)
 public Action:OnSuicide(client, const String:command[], args)
 {
 	new bool:canBossSuicide=GetConVarBool(cvarBossSuicide);
-	if(Enabled && IsBoss(client) && (canBossSuicide ? !CheckRoundState() : true) && CheckRoundState()!=2)
+	if(Enabled && IsBoss(client) && (canBossSuicide ? CheckRoundState()!=FF2RoundState_Setup : true) && CheckRoundState()!=FF2RoundState_RoundEnd)
 	{
 		CPrintToChat(client, "{olive}[FF2]{default} %t", canBossSuicide ? "Boss Suicide Pre-round" : "Boss Suicide Denied");
 		return Plugin_Handled;
@@ -7345,7 +7345,39 @@ DoOverlay(client, const String:overlay[])
 	SetCommandFlags("r_screenoverlay", flags);
 }
 
-public FF2PanelH(Handle:menu, MenuAction:action, client, selection)
+public Action:FF2Panel(client, args)  //._.
+{
+	if(Enabled2 && IsValidClient(client, false))
+	{
+		new Handle:panel=CreatePanel();
+		decl String:text[512];
+		SetGlobalTransTarget(client);
+		Format(text, sizeof(text), "%t", "What's Up");
+		SetPanelTitle(panel, text);
+		Format(text, sizeof(text), "%t", "FF2 Help");
+		DrawPanelItem(panel, text);
+		Format(text, sizeof(text), "%t", "Class Changes");
+		DrawPanelItem(panel, text);
+		Format(text, sizeof(text), "%t", "What's New in FF2");
+		DrawPanelItem(panel, text);
+		Format(text, sizeof(text), "%t", "View Queue Points");
+		DrawPanelItem(panel, text);
+		Format(text, sizeof(text), "%t", "Toggle Music");
+		DrawPanelItem(panel, text);
+		Format(text, sizeof(text), "%t", "Toggle Monologue");
+		DrawPanelItem(panel, text);
+		Format(text, sizeof(text), "%t", "Toggle Class Changes");
+		DrawPanelItem(panel, text);
+		Format(text, sizeof(text), "%t", "Exit Menu");
+		DrawPanelItem(panel, text);
+		SendPanelToClient(panel, client, Handler_FF2Panel, MENU_TIME_FOREVER);
+		CloseHandle(panel);
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
+
+public Handler_FF2Panel(Handle:menu, MenuAction:action, client, selection)
 {
 	if(action==MenuAction_Select)
 	{
@@ -7385,38 +7417,6 @@ public FF2PanelH(Handle:menu, MenuAction:action, client, selection)
 			}
 		}
 	}
-}
-
-public Action:FF2Panel(client, args)  //._.
-{
-	if(Enabled2 && IsValidClient(client, false))
-	{
-		new Handle:panel=CreatePanel();
-		decl String:text[512];
-		SetGlobalTransTarget(client);
-		Format(text, sizeof(text), "%t", "What's Up");
-		SetPanelTitle(panel, text);
-		Format(text, sizeof(text), "%t", "FF2 Help");
-		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "Class Changes");
-		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "What's New in FF2");
-		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "View Queue Points");
-		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "Toggle Music");
-		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "Toggle Monologue");
-		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "Toggle Class Changes");
-		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "Exit Menu");
-		DrawPanelItem(panel, text);
-		SendPanelToClient(panel, client, Handler_FF2Panel, MENU_TIME_FOREVER);
-		CloseHandle(panel);
-		return Plugin_Handled;
-	}
-	return Plugin_Continue;
 }
 
 public NewPanelH(Handle:menu, MenuAction:action, param1, param2)
@@ -8228,7 +8228,7 @@ public Native_SetBossCharge(Handle:plugin, numParams)
 
 public Native_GetRoundState(Handle:plugin, numParams)
 {
-	return _:CheckRoundState()==FF2RoundState_Loading ? FF2RoundState_Setup : _:CheckRoundState();
+	return CheckRoundState()==FF2RoundState_Loading ? 0 : _:CheckRoundState();  //Make sure this stays as 0 or else...COMPILER ERRORS!
 }
 
 public Native_GetRageDist(Handle:plugin, numParams)
@@ -8597,7 +8597,7 @@ public Action:VSH_OnGetRoundState(&result)
 {
 	if(Enabled)
 	{
-		result=CheckRoundState();
+		result=_:CheckRoundState();
 		return Plugin_Changed;
 	}
 	return Plugin_Continue;
