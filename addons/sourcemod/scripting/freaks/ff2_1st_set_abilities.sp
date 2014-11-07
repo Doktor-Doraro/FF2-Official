@@ -11,7 +11,7 @@
 
 #define CBS_MAX_ARROWS 9
 
-#define PLUGIN_VERSION "1.10.0"
+#define PLUGIN_VERSION "1.10.3"
 
 public Plugin:myinfo=
 {
@@ -47,6 +47,13 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 
 public OnPluginStart2()
 {
+	new version[3];
+	FF2_GetFF2Version(version);
+	if(version[0]==1 && (version[1]<10 || (version[1]==10 && version[2]<3)))
+	{
+		SetFailState("This plugin depends on at least FF2 v1.10.3");
+	}
+
 	HookEvent("teamplay_round_start", event_round_start);
 	HookEvent("teamplay_round_win", event_round_end);
 	HookEvent("player_death", event_player_death);
@@ -59,8 +66,9 @@ public OnPluginStart2()
 
 public OnMapStart()
 {
-	PrecacheSound("replay\\exitperformancemode.wav",true);
-	PrecacheSound("replay\\enterperformancemode.wav",true);
+	PrecacheSound("replay/enterperformancemode.wav", true);  //Used when Ninja Spy enters slow mo
+	PrecacheSound("replay/exitperformancemode.wav", true);  //Used when Ninja Spy exits slow mo
+	PrecacheSound("ui/notification_alert.wav", true);  //Used when Demopan rages
 }
 
 public Action:event_round_start(Handle:event, const String:name[], bool:dontBroadcast)
@@ -167,30 +175,29 @@ public Action:FF2_OnAbility2(client, const String:plugin_name[], const String:ab
 	return Plugin_Continue;
 }
 
-Rage_Clone(const String:ability_name[], client)
+Rage_Clone(const String:ability_name[], boss)
 {
-	new boss=GetClientOfUserId(FF2_GetBossUserId(client));
 	new Handle:bossKV[8];
 	decl String:bossName[32];
-	new bool:changeModel=bool:FF2_GetAbilityArgument(client, this_plugin_name, ability_name, 1);
-	new weaponMode=FF2_GetAbilityArgument(client, this_plugin_name, ability_name, 2);
+	new bool:changeModel=bool:FF2_GetAbilityArgument(boss, this_plugin_name, ability_name, 1);
+	new weaponMode=FF2_GetAbilityArgument(boss, this_plugin_name, ability_name, 2);
 	decl String:model[PLATFORM_MAX_PATH];
-	FF2_GetAbilityArgumentString(client, this_plugin_name, ability_name, 3, model, sizeof(model));
-	new class=FF2_GetAbilityArgument(client, this_plugin_name, ability_name, 4);
-	new Float:ratio=FF2_GetAbilityArgumentFloat(client, this_plugin_name, ability_name, 5, 0.0);
+	FF2_GetAbilityArgumentString(boss, this_plugin_name, ability_name, 3, model, sizeof(model));
+	new class=FF2_GetAbilityArgument(boss, this_plugin_name, ability_name, 4);
+	new Float:ratio=FF2_GetAbilityArgumentFloat(boss, this_plugin_name, ability_name, 5, 0.0);
 	new String:classname[64]="tf_weapon_bottle";
-	FF2_GetAbilityArgumentString(client, this_plugin_name, ability_name, 6, classname, sizeof(classname));
-	new index=FF2_GetAbilityArgument(client, this_plugin_name, ability_name, 7, 191);
+	FF2_GetAbilityArgumentString(boss, this_plugin_name, ability_name, 6, classname, sizeof(classname));
+	new index=FF2_GetAbilityArgument(boss, this_plugin_name, ability_name, 7, 191);
 	new String:attributes[64]="68 ; -1";
-	FF2_GetAbilityArgumentString(client, this_plugin_name, ability_name, 8, attributes, sizeof(attributes));
-	new ammo=FF2_GetAbilityArgument(client, this_plugin_name, ability_name, 9, 0);
-	new clip=FF2_GetAbilityArgument(client, this_plugin_name, ability_name, 10, 0);
-	new health=FF2_GetAbilityArgument(client, this_plugin_name, ability_name, 11, 0);
-	new Float:position[3];
-	new Float:velocity[3];
+	FF2_GetAbilityArgumentString(boss, this_plugin_name, ability_name, 8, attributes, sizeof(attributes));
+	new ammo=FF2_GetAbilityArgument(boss, this_plugin_name, ability_name, 9, -1);
+	new clip=FF2_GetAbilityArgument(boss, this_plugin_name, ability_name, 10, -1);
+	new health=FF2_GetAbilityArgument(boss, this_plugin_name, ability_name, 11, 0);
 
-	GetEntPropVector(boss, Prop_Data, "m_vecOrigin", position);
-	FF2_GetBossSpecial(client, bossName, 32);
+	new Float:position[3], Float:velocity[3];
+	GetEntPropVector(GetClientOfUserId(FF2_GetBossUserId(boss)), Prop_Data, "m_vecOrigin", position);
+
+	FF2_GetBossSpecial(boss, bossName, sizeof(bossName));
 
 	new maxKV;
 	for(maxKV=0; maxKV<8; maxKV++)
@@ -201,15 +208,14 @@ Rage_Clone(const String:ability_name[], client)
 		}
 	}
 
-	new alive=0;
-	new dead=0;
+	new alive, dead;
 	new Handle:players=CreateArray();
 	for(new target=1; target<=MaxClients; target++)
 	{
 		if(IsClientInGame(target))
 		{
-			new team=GetClientTeam(target);
-			if(team>_:TFTeam_Spectator && team!=BossTeam)
+			new TFTeam:team=TFTeam:GetClientTeam(target);
+			if(team>TFTeam_Spectator && team!=TFTeam_Blue)
 			{
 				if(IsPlayerAlive(target))
 				{
@@ -224,7 +230,7 @@ Rage_Clone(const String:ability_name[], client)
 		}
 	}
 
-	new totalMinions=(ratio ? RoundToCeil(alive*ratio) : MaxClients);
+	new totalMinions=(ratio ? RoundToCeil(alive*ratio) : MaxClients);  //If ratio is 0, use MaxClients instead
 	new config=GetRandomInt(0, maxKV-1);
 	new clone, temp;
 	for(new i=1; i<=dead && i<=totalMinions; i++)
@@ -240,7 +246,7 @@ Rage_Clone(const String:ability_name[], client)
 		FF2_SetFF2flags(clone, FF2_GetFF2flags(clone)|FF2FLAG_ALLOWSPAWNINBOSSTEAM);
 		ChangeClientTeam(clone, BossTeam);
 		TF2_RespawnPlayer(clone);
-		CloneOwnerIndex[clone]=client;
+		CloneOwnerIndex[clone]=boss;
 		TF2_SetPlayerClass(clone, (class ? (TFClassType:class) : (TFClassType:KvGetNum(bossKV[config], "class", 0))));
 
 		if(changeModel)
@@ -273,6 +279,7 @@ Rage_Clone(const String:ability_name[], client)
 				{
 					attributes="68 ; -1";
 				}
+
 				weapon=SpawnWeapon(clone, classname, index, 101, 0, attributes);
 				if(IsValidEdict(weapon))
 				{
@@ -280,7 +287,7 @@ Rage_Clone(const String:ability_name[], client)
 					SetEntProp(weapon, Prop_Send, "m_iWorldModelIndex", -1);
 				}
 
-				SetAmmo(clone, weapon, ammo, clip);
+				FF2_SetAmmo(clone, weapon, ammo, clip);
 			}
 		}
 
@@ -423,7 +430,7 @@ public Action:Timer_Demopan_Rage(Handle:timer, any:count)
 	{
 		decl String:overlay[128];
 		Format(overlay, 128, "r_screenoverlay \"freak_fortress_2/demopan/trade_%i\"", count);
-		EmitSoundToAll("ui\\notification_alert.wav", _, _, SNDLEVEL_TRAFFIC, SND_NOFLAGS, SNDVOL_NORMAL, 100, _, _, NULL_VECTOR, false, 0.0);
+		EmitSoundToAll("ui/notification_alert.wav", _, _, SNDLEVEL_TRAFFIC, SND_NOFLAGS, SNDVOL_NORMAL, 100, _, _, NULL_VECTOR, false, 0.0);
 		SetCommandFlags("r_screenoverlay", GetCommandFlags("r_screenoverlay") & ~FCVAR_CHEAT);
 		for(new client=1; client<=MaxClients; client++)
 		{
@@ -446,15 +453,15 @@ public Action:Timer_Demopan_Rage(Handle:timer, any:count)
 	return Plugin_Continue;
 }
 
-Rage_Bow(client)
+Rage_Bow(boss)
 {
-	new boss=GetClientOfUserId(FF2_GetBossUserId(client));
-	TF2_RemoveWeaponSlot(boss, TFWeaponSlot_Primary);
-	new weapon=SpawnWeapon(boss, "tf_weapon_compound_bow", 1005, 100, 5, "6 ; 0.5 ; 37 ; 0.0 ; 280 ; 19");
-	SetEntPropEnt(boss, Prop_Send, "m_hActiveWeapon", weapon);
+	new client=GetClientOfUserId(FF2_GetBossUserId(boss));
+	TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+	new weapon=SpawnWeapon(client, "tf_weapon_compound_bow", 1005, 100, 5, "6 ; 0.5 ; 37 ; 0.0 ; 280 ; 19");
+	SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
 	new TFTeam:team=(FF2_GetBossTeam()==_:TFTeam_Blue ? TFTeam_Red:TFTeam_Blue);
 
-	new otherTeamAlivePlayers=0;
+	new otherTeamAlivePlayers;
 	for(new target=1; target<=MaxClients; target++)
 	{
 		if(IsClientInGame(target) && TFTeam:GetClientTeam(target)==team && IsPlayerAlive(target))
@@ -463,7 +470,7 @@ Rage_Bow(client)
 		}
 	}
 
-	SetAmmo(boss, weapon, ((otherTeamAlivePlayers>=CBS_MAX_ARROWS) ? CBS_MAX_ARROWS:otherTeamAlivePlayers));
+	FF2_SetAmmo(client, weapon, ((otherTeamAlivePlayers>=CBS_MAX_ARROWS) ? CBS_MAX_ARROWS : otherTeamAlivePlayers)-1, 1);  //Put one arrow in the clip
 }
 
 public Action:Timer_Prepare_Explosion_Rage(Handle:timer, Handle:data)
@@ -741,18 +748,18 @@ public Action:Timer_SlomoChange(Handle:timer, any:client)
 }
 */
 
-
 public Action:event_player_death(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if(GetEventInt(event, "death_flags") & TF_DEATHFLAG_DEADRINGER)
-	{
-		return Plugin_Continue;
-	}
-
 	new attacker=GetClientOfUserId(GetEventInt(event, "attacker"));
 	new client=GetClientOfUserId(GetEventInt(event, "userid"));
 	new bossAttacker=FF2_GetBossIndex(attacker);
 	new bossClient=FF2_GetBossIndex(client);
+
+	if(!attacker || !client || attacker==client)
+	{
+		return Plugin_Continue;
+	}
+
 	if(bossAttacker!=-1)
 	{
 		if(FF2_HasAbility(bossAttacker, this_plugin_name, "special_dropprop"))
@@ -795,15 +802,15 @@ public Action:event_player_death(Handle:event, const String:name[], bool:dontBro
 				{
 					case 0:
 					{
-						weapon=SpawnWeapon(attacker,"tf_weapon_club", 171, 101, 5, "68 ; 2 ; 2 ; 3.0");
+						weapon=SpawnWeapon(attacker, "tf_weapon_club", 171, 101, 5, "68 ; 2 ; 2 ; 3.0");
 					}
 					case 1:
 					{
-						weapon=SpawnWeapon(attacker,"tf_weapon_club", 193, 101, 5, "68 ; 2 ; 2 ; 3.0");
+						weapon=SpawnWeapon(attacker, "tf_weapon_club", 193, 101, 5, "68 ; 2 ; 2 ; 3.0");
 					}
 					case 2:
 					{
-						weapon=SpawnWeapon(attacker,"tf_weapon_club", 232, 101, 5, "68 ; 2 ; 2 ; 3.0");
+						weapon=SpawnWeapon(attacker, "tf_weapon_club", 232, 101, 5, "68 ; 2 ; 2 ; 3.0");
 					}
 				}
 				SetEntPropEnt(attacker, Prop_Data, "m_hActiveWeapon", weapon);
@@ -813,11 +820,16 @@ public Action:event_player_death(Handle:event, const String:name[], bool:dontBro
 
 	if(bossClient!=-1)
 	{
+		if(GetEventInt(event, "death_flags") & TF_DEATHFLAG_DEADRINGER)
+		{
+			return Plugin_Continue;
+		}
+
 		if(FF2_HasAbility(bossClient, this_plugin_name, "rage_cloneattack"))
 		{
 			for(new target=1; target<=MaxClients; target++)
 			{
-				if(CloneOwnerIndex[target]==bossClient && IsValidEdict(target) && IsClientConnected(target) && IsPlayerAlive(target) && GetClientTeam(target)==BossTeam)
+				if(CloneOwnerIndex[target]==bossClient && IsClientInGame(target) && IsPlayerAlive(target) && GetClientTeam(target)==BossTeam)
 				{
 					CreateTimer(0.5, Timer_RestoreLastClass, GetClientUserId(target));
 				}
@@ -902,27 +914,6 @@ stock SpawnWeapon(client, String:name[], index, level, quality, String:attribute
 	return entity;
 }
 
-stock SetAmmo(client, weapon, ammo, clip=0)
-{
-	if(IsValidEntity(weapon))
-	{
-		SetEntProp(weapon, Prop_Send, "m_iClip1", clip);
-		new offset=GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1);
-		if(offset!=-1)
-		{
-			SetEntProp(client, Prop_Send, "m_iAmmo", ammo, 4, offset);
-		}
-		else if(ammo)
-		{
-			new String:classname[64];
-			GetEdictClassname(weapon, classname, sizeof(classname));
-			new String:bossName[32];
-			FF2_GetBossSpecial(FF2_GetBossIndex(client), bossName, sizeof(bossName));
-			LogError("[FF2] Cannot give ammo to weapon %s (boss %s)-check your config!", classname, bossName);
-		}
-	}
-}
-
 public Action:Timer_RemoveEntity(Handle:timer, any:entid)
 {
 	new entity=EntRefToEntIndex(entid);
@@ -973,3 +964,4 @@ UpdateClientCheatValue(const value)
 		}
 	}
 }
+>>>>>>> origin/master
