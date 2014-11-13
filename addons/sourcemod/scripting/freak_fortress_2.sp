@@ -254,7 +254,7 @@ static const String:ff2versiontitles[][]=
 	"1.10.3",
 	"1.10.3",
 	"1.10.3",
-	"1.10.3",
+	"1.10.3"
 };
 
 static const String:ff2versiondates[][]=
@@ -2174,7 +2174,7 @@ public Action:event_round_start(Handle:event, const String:name[], bool:dontBroa
 			if(PickCharacter(client, client-1))
 			{
 				KvRewind(BossKV[Special[client]]);
-				for(new tries; Boss[client]==Boss[client-1] && tries<100; tries++)
+				for(new tries; Boss[client]==Boss[client-1] && tries<100; tries++)  //TODO: What is the purpose of this?
 				{
 					Boss[client]=FindBosses(isBoss);
 				}
@@ -2390,7 +2390,7 @@ ModifyItemPacks()
 		TeleportEntity(smallAmmo, position, NULL_VECTOR, NULL_VECTOR);
 		DispatchSpawn(smallAmmo);
 		SetEntProp(smallAmmo, Prop_Send, "m_iTeamNum", OtherTeam, 4);
-		
+
 	}
 
 	entity=-1;
@@ -3352,18 +3352,6 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 				return Plugin_Changed;
 			}
 		}
-		case 224:  //L'etranger
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "85 ; 0.5 ; 204 ; 1 ; 253 ; 1.0");
-				//85: +50% time needed to regen cloak
-				//204: Hit self on miss
-				//253: +1 second needed to fully cloak
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
 		case 239, 1084, 1100:  //GRU, Festive GRU, Bread Bite
 		{
 			new Handle:itemOverride=PrepareItemHandle(item, _, _, "1 ; 0.5 ; 107 ; 1.5 ; 128 ; 1 ; 191 ; -7", true);
@@ -3499,22 +3487,6 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			new Handle:itemOverride=PrepareItemHandle(item, _, _, "178 ; 0 ; 358 ; 0 ; 362 ; 0 ; 363 ; 0 ; 369 ; 0", true);
 				//178:  +100% faster weapon switch
 				//Other attributes:  Because TF2Items doesn't feel like stripping the Holiday Punch's attributes for some reason
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 772:  //Baby Face's Blaster
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.25 ; 16 ; 10 ; 26 ; 15 ; 109 ; 0.25 ; 128 ; 1 ; 191 ; -3 ; 418 ; 1", true);
-				//2: +25% damage bonus
-				//16: +10 health on hit
-				//26: +15 max health
-				//109: -75% health from packs on wearer
-				//128: Only when weapon is active
-				//191: -3 health drained per second
-				//418: Build hype for faster speed
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
@@ -3730,7 +3702,7 @@ public Action:MakeNotBoss(Handle:timer, any:userid)
 	return Plugin_Continue;
 }
 
-public Action:CheckItems(Handle:timer, any:client)  //Weapon balance 2
+public Action:CheckItems(Handle:timer, any:client)
 {
 	if(!IsValidClient(client) || !IsPlayerAlive(client) || CheckRoundState()==2 || IsBoss(client) || (FF2flags[client] & FF2FLAG_ALLOWSPAWNINBOSSTEAM))
 	{
@@ -3799,11 +3771,6 @@ public Action:CheckItems(Handle:timer, any:client)  //Weapon balance 2
 		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 		switch(index)
 		{
-			case 231:  //Darwin's Danger Shield
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-				weapon=SpawnWeapon(client, "tf_weapon_smg", 16, 1, 0, "");
-			}
 			case 265:  //Stickybomb Jumper
 			{
 				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
@@ -6160,21 +6127,6 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 					else
 					{
 						return action;
-					}
-				}
-
-				if(attacker==client)
-				{
-					new weapon=GetPlayerWeaponSlot(attacker, TFWeaponSlot_Melee);
-					if(IsValidEntity(weapon) && GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex")==307)  //Ullapool Caber
-					{
-						if(detonations[attacker]<allowedDetonations)
-						{
-							detonations[attacker]++;
-							SetEntProp(weapon, Prop_Send, "m_bBroken", 0);
-							SetEntProp(weapon, Prop_Send, "m_iDetonated", 0);
-							PrintHintText(attacker, "%t", "Detonations Left", allowedDetonations-detonations[attacker]);
-						}
 					}
 				}
 			}
